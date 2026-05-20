@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: '选择构建平台'
+        required: true
+        default: 'windows'
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
 
 env:
   IS_CI: 'true'
