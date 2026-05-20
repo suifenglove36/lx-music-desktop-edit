@@ -46,9 +46,9 @@ const options = {
   ],
   publish: [
     {
-      provider: 'github',
+      provider: 'suifenglove36',
       owner: 'lyswhut',
-      repo: 'lx-music-desktop',
+      repo: 'lx-music-desktop-edit',
     },
   ],
 }
