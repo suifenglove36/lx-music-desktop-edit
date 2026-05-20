@@ -14,6 +14,11 @@
         <use xlink:href="#icon-desktop-lyric-off" />
       </svg>
     </button>
+    <button :class="[$style.titleBtn, { [$style.active]: isShowPlayList }]" :aria-label="$t('player__play_list')" @click="openPlayList">
+      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 24 24" space="preserve">
+        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </button>
     <common-volume-btn />
     <common-toggle-play-mode-btn />
     <common-list-add-modal v-model:show="isShowAddMusicTo" :music-info="playMusicInfo.musicInfo" />
@@ -23,7 +28,8 @@
 <script>
 import { ref } from '@common/utils/vueTools'
 import useToggleDesktopLyric from '@renderer/utils/compositions/useToggleDesktopLyric'
-import { musicInfo, playMusicInfo } from '@renderer/store/player/state'
+import { isShowPlayerDetail, isShowPlayList, musicInfo, playMusicInfo } from '@renderer/store/player/state'
+import { setShowPlayerDetail, setShowPlayList } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
 
 export default {
@@ -38,9 +44,16 @@ export default {
       if (!musicInfo.id) return
       isShowAddMusicTo.value = true
     }
+    const openPlayList = () => {
+      if (!playMusicInfo.musicInfo) return
+      if (!isShowPlayerDetail.value) setShowPlayerDetail(true)
+      setShowPlayList(true)
+    }
     return {
       appSetting,
       isShowAddMusicTo,
+      isShowPlayList,
+      openPlayList,
       toggleDesktopLyricBtnTitle,
       toggleDesktopLyric,
       toggleLockDesktopLyric,
@@ -97,5 +110,9 @@ export default {
   }
 }
 
+.active {
+  color: var(--color-primary);
+  opacity: 1;
+}
 
 </style>

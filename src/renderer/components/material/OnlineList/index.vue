@@ -28,10 +28,22 @@
           <base-virtualized-list v-if="actionButtonsVisible" ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @contextmenu.capture="handleListRightClick">
             <template #default="{ item, index }">
               <div
-                class="list-item" :class="[{ selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
+                class="list-item" :class="[{ [$style.currentPlaying]: isCurrentPlayingItem(item) }, { [$style.currentPlayingPlaying]: isCurrentPlayingItem(item) && isPlay }, { selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
                 @click="handleListItemClick($event, index)" @contextmenu="handleListItemRightClick($event, index)"
               >
-                <div class="list-item-cell no-select num" style="flex: 0 0 5%;" @click.stop>{{ index + 1 }}</div>
+                <div class="list-item-cell no-select" :class="$style.num" style="flex: 0 0 5%;" @click.stop>
+                  <transition name="play-active">
+                    <div v-if="isCurrentPlayingItem(item)" :class="$style.playIcon" aria-hidden="true">
+                      <span :class="$style.playDot" />
+                      <span :class="[$style.playState, { [$style.playStatePlaying]: isPlay }]">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </div>
+                    <div v-else class="num">{{ index + 1 }}</div>
+                  </transition>
+                </div>
                 <div class="list-item-cell auto name">
                   <span class="select name" :aria-label="item.name">{{ item.name }}</span>
                   <span v-if="item.meta._qualitys.flac24bit" class="no-select badge badge-theme-primary">{{ $t('tag__lossless_24bit') }}</span>
@@ -56,10 +68,22 @@
           <base-virtualized-list v-else ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @contextmenu.capture="handleListRightClick">
             <template #default="{ item, index }">
               <div
-                class="list-item" :class="[{ selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
+                class="list-item" :class="[{ [$style.currentPlaying]: isCurrentPlayingItem(item) }, { [$style.currentPlayingPlaying]: isCurrentPlayingItem(item) && isPlay }, { selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
                 @click="handleListItemClick($event, index)" @contextmenu="handleListItemRightClick($event, index)"
               >
-                <div class="list-item-cell no-select num" style="flex: 0 0 5%;" @click.stop>{{ index + 1 }}</div>
+                <div class="list-item-cell no-select" :class="$style.num" style="flex: 0 0 5%;" @click.stop>
+                  <transition name="play-active">
+                    <div v-if="isCurrentPlayingItem(item)" :class="$style.playIcon" aria-hidden="true">
+                      <span :class="$style.playDot" />
+                      <span :class="[$style.playState, { [$style.playStatePlaying]: isPlay }]">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </div>
+                    <div v-else class="num">{{ index + 1 }}</div>
+                  </transition>
+                </div>
                 <div class="list-item-cell auto name">
                   <span class="select name" :aria-label="item.name">{{ item.name }}</span>
                   <span v-if="item.meta._qualitys.flac24bit" class="no-select badge badge-theme-primary">{{ $t('tag__lossless_24bit') }}</span>
@@ -101,7 +125,7 @@
 <script>
 import { clipboardWriteText } from '@common/utils/electron'
 import { assertApiSupport } from '@renderer/store/utils'
-import { ref } from '@common/utils/vueTools'
+import { ref, nextTick, watch, onBeforeUnmount } from '@common/utils/vueTools'
 import useList from './useList'
 import useMenu from './useMenu'
 import usePlay from './usePlay'
@@ -109,6 +133,7 @@ import useMusicDownload from './useMusicDownload'
 import useMusicAdd from './useMusicAdd'
 import useMusicActions from './useMusicActions'
 import { appSetting } from '@renderer/store/setting'
+import { isPlay, playMusicInfo } from '@renderer/store/player/state'
 export default {
   name: 'MaterialOnlineList',
   props: {
@@ -149,6 +174,8 @@ export default {
     const rightClickSelectedIndex = ref(-1)
     const dom_listContent = ref(null)
     const listRef = ref(null)
+    const scrollFrame = ref(null)
+    const scrollTaskId = ref(0)
 
     const {
       selectedList,
@@ -246,9 +273,51 @@ export default {
           break
       }
     }
+    const isCurrentPlayingItem = (item) => {
+      return !!item && !!playMusicInfo.musicInfo?.id && playMusicInfo.musicInfo.id == item.id
+    }
+
+    const scrollCurrentItemIntoView = () => {
+      const currentMusicId = playMusicInfo.musicInfo?.id
+      if (!currentMusicId || !props.list.length) return false
+      const currentIndex = props.list.findIndex(item => item.id == currentMusicId)
+      if (currentIndex < 0) return false
+      listRef.value?.scrollToIndex(currentIndex, -150, false)
+      return true
+    }
+
+    const clearScrollFrame = () => {
+      if (scrollFrame.value !== null) {
+        cancelAnimationFrame(scrollFrame.value)
+        scrollFrame.value = null
+      }
+    }
+
+    const tryScrollToCurrent = () => {
+      const taskId = ++scrollTaskId.value
+      clearScrollFrame()
+      void nextTick().then(() => {
+        if (taskId !== scrollTaskId.value) return
+        const frameId = window.requestAnimationFrame(() => {
+          if (taskId !== scrollTaskId.value) return
+          scrollFrame.value = null
+          scrollCurrentItemIntoView()
+        })
+        scrollFrame.value = frameId
+      })
+    }
     const scrollToTop = () => {
       listRef.value.scrollTo(0, true)
     }
+
+    watch(() => props.list, () => {
+      tryScrollToCurrent()
+    }, { immediate: true })
+
+    onBeforeUnmount(() => {
+      scrollTaskId.value++
+      clearScrollFrame()
+    })
 
     return {
       listItemHeight,
@@ -279,6 +348,8 @@ export default {
 
       scrollToTop,
       actionButtonsVisible,
+      isCurrentPlayingItem,
+      isPlay,
     }
   },
 }
@@ -304,6 +375,22 @@ export default {
   display: flex;
   flex-flow: column nowrap;
   font-size: 14px;
+
+  :global(.list-item).currentPlaying {
+    color: var(--color-button-font);
+  }
+
+  :global(.list-item).currentPlayingPlaying {
+    animation: online-song-playing-breathe 1.8s ease-in-out infinite;
+  }
+}
+
+.num {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 .content {
@@ -335,6 +422,101 @@ export default {
     font-size: 24px;
     color: var(--color-font-label);
   }
+}
+
+.playIcon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--color-button-font);
+  opacity: .95;
+}
+
+.playDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: online-song-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.playState {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+
+  > span {
+    width: 2px;
+    height: 35%;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: .55;
+    transform-origin: center bottom;
+  }
+}
+
+.playStatePlaying {
+  > span:nth-child(1) {
+    animation: online-song-eq-1 700ms ease-in-out infinite;
+  }
+  > span:nth-child(2) {
+    animation: online-song-eq-2 560ms ease-in-out infinite;
+  }
+  > span:nth-child(3) {
+    animation: online-song-eq-3 640ms ease-in-out infinite;
+  }
+}
+
+@keyframes online-song-playing-breathe {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px var(--color-primary-alpha-500);
+  }
+}
+
+@keyframes online-song-dot-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: .7;
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+    opacity: .7;
+  }
+}
+
+@keyframes online-song-eq-1 {
+  0%, 100% { height: 28%; }
+  50% { height: 92%; }
+}
+
+@keyframes online-song-eq-2 {
+  0%, 100% { height: 42%; }
+  50% { height: 100%; }
+}
+
+@keyframes online-song-eq-3 {
+  0%, 100% { height: 34%; }
+  50% { height: 82%; }
 }
 
 </style>

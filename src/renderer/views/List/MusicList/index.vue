@@ -33,10 +33,13 @@
         >
           <div class="list-item-cell no-select" :class="$style.num" style="flex: 0 0 5%;">
             <transition name="play-active">
-              <div v-if="playerInfo.isPlayList && playerInfo.playIndex === index" :class="$style.playIcon">
-                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="50%" viewBox="0 0 512 512" space="preserve">
-                  <use xlink:href="#icon-play-outline" />
-                </svg>
+              <div v-if="playerInfo.isPlayList && playerInfo.playIndex === index" :class="$style.playIcon" aria-hidden="true">
+                <span :class="$style.playDot" />
+                <span :class="[$style.playState, { [$style.playStatePlaying]: isPlay }]">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </div>
               <div v-else class="num">{{ index + 1 }}</div>
             </transition>
@@ -65,10 +68,13 @@
         >
           <div class="list-item-cell no-select" :class="$style.num" style="flex: 0 0 5%;">
             <transition name="play-active">
-              <div v-if="playerInfo.isPlayList && playerInfo.playIndex === index" :class="$style.playIcon">
-                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="50%" viewBox="0 0 512 512" space="preserve">
-                  <use xlink:href="#icon-play-outline" />
-                </svg>
+              <div v-if="playerInfo.isPlayList && playerInfo.playIndex === index" :class="$style.playIcon" aria-hidden="true">
+                <span :class="$style.playDot" />
+                <span :class="[$style.playState, { [$style.playStatePlaying]: isPlay }]">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </div>
               <div v-else class="num">{{ index + 1 }}</div>
             </transition>
@@ -121,6 +127,7 @@ import useSearch from './useSearch'
 import useListScroll from './useListScroll'
 import useMusicToggle from './useMusicToggle'
 import { appSetting } from '@renderer/store/setting'
+import { isPlay } from '@renderer/store/player/state'
 export default {
   name: 'MusicList',
   components: {
@@ -354,6 +361,8 @@ export default {
       isShowMusicToggleModal,
       selectedToggleMusicInfo,
       toggleSource,
+
+      isPlay,
     }
   },
 }
@@ -400,11 +409,50 @@ export default {
   width: 100%;
   height: 100%;
   display: flex;
+  gap: 4px;
   align-items: center;
   justify-content: center;
 
   color: var(--color-button-font);
-  opacity: .7;
+  opacity: .95;
+}
+
+.playDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: musiclist-play-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.playState {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+
+  > span {
+    width: 2px;
+    height: 35%;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: .55;
+    transform-origin: center bottom;
+  }
+}
+
+.playStatePlaying {
+  > span:nth-child(1) {
+    animation: musiclist-play-eq-1 700ms ease-in-out infinite;
+  }
+  > span:nth-child(2) {
+    animation: musiclist-play-eq-2 560ms ease-in-out infinite;
+  }
+  > span:nth-child(3) {
+    animation: musiclist-play-eq-3 640ms ease-in-out infinite;
+  }
 }
 .content {
   min-height: 0;
@@ -426,6 +474,39 @@ export default {
     font-size: 24px;
     color: var(--color-font-label);
   }
+}
+
+@keyframes musiclist-play-dot-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: .7;
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+    opacity: .7;
+  }
+}
+
+@keyframes musiclist-play-eq-1 {
+  0%, 100% { height: 28%; }
+  50% { height: 92%; }
+}
+
+@keyframes musiclist-play-eq-2 {
+  0%, 100% { height: 42%; }
+  50% { height: 100%; }
+}
+
+@keyframes musiclist-play-eq-3 {
+  0%, 100% { height: 34%; }
+  50% { height: 82%; }
 }
 
 </style>

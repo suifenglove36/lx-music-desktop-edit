@@ -1,49 +1,102 @@
 import Sortable, { AutoScroll } from 'sortablejs/modular/sortable.core.esm'
-import { onMounted } from '@common/utils/vueTools'
+import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { clearDownKeys } from '@renderer/event'
 
 Sortable.mount(new AutoScroll())
 
 const noop = () => {}
 
-export default ({ dom_list, dragingItemClassName, filter, onUpdate, onStart = noop, onEnd = noop }) => {
-  let sortable
+const normalizeSelector = (value) => {
+  if (!value) return null
+  if (value.startsWith('.') ||
+    value.startsWith('#') ||
+    value.startsWith('[') ||
+    value.includes(' ') ||
+    value.includes('>') ||
+    value.includes(':')) return value
+  return '.' + value
+}
 
-  onMounted(() => {
-    sortable = Sortable.create(dom_list.value, {
+export default ({
+  dom_list,
+  dragingItemClassName,
+  filter,
+  handle = null,
+  group = null,
+  onUpdate,
+  onAdd = null,
+  onStart = noop,
+  onEnd = noop,
+  onDragStart = noop,
+  onDragEnd = noop,
+  onReady = noop,
+}) => {
+  let sortable
+  let pendingDisabled = true
+
+  const initSortable = (el) => {
+    if (!el) return
+    if (sortable) {
+      sortable.destroy()
+      sortable = null
+    }
+    sortable = Sortable.create(el, {
       animation: 150,
-      disabled: true,
-      forceFallback: false,
-      filter: filter ? '.' + filter : null,
+      disabled: pendingDisabled,
+      forceFallback: true,
+      fallbackTolerance: 4,
+      fallbackOnBody: true,
+      group: group || undefined,
+      filter: normalizeSelector(filter),
+      handle: normalizeSelector(handle),
       ghostClass: dragingItemClassName,
       onUpdate(event) {
         onUpdate(event.newIndex, event.oldIndex)
       },
-      onMove(event) {
-        return filter ? !event.related.classList.contains(filter) : true
+      onAdd(event) {
+        if (!onAdd) return
+        onAdd(event.newIndex, event.oldIndex)
       },
-      onChoose() {
+      onMove() {
+        return true
+      },
+      onStart() {
         onStart()
-      },
-      onUnchoose() {
-        onEnd()
-        // 处于拖动状态期间，键盘事件无法监听，拖动结束手动清理按下的键
-        // window.app_event.emit(eventBaseName.setClearDownKeys)
-        clearDownKeys()
-      },
-      onStart(event) {
+        onDragStart()
         window.app_event.dragStart()
       },
-      onEnd(event) {
+      onEnd() {
+        onEnd()
+        onDragEnd()
+        // 处于拖动状态期间，键盘事件无法监听，拖动结束手动清理按下的键
+        clearDownKeys()
         window.app_event.dragEnd()
       },
     })
+    sortable.option('disabled', pendingDisabled)
+    onReady()
+  }
+
+  watch(dom_list, el => {
+    if (sortable) {
+      sortable.destroy()
+      sortable = null
+    }
+    if (el) initSortable(el)
+  }, { immediate: true, flush: 'post' })
+
+  onBeforeUnmount(() => {
+    if (sortable) {
+      sortable.destroy()
+      sortable = null
+    }
   })
 
   return {
-    setDisabled(enable) {
+    setDisabled: (disabled) => {
+      pendingDisabled = disabled
       if (!sortable) return
-      sortable.option('disabled', enable)
+      sortable.option('disabled', disabled)
     },
   }
 }

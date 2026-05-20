@@ -10,14 +10,16 @@ transition(enter-active-class="animated slideInRight" leave-active-class="animat
       div.left(:class="$style.left")
         //- div(:class="$style.info")
         div(:class="$style.info")
-          img(v-if="musicInfo.pic" :class="$style.img" :src="musicInfo.pic")
+          img(v-if="musicInfo.pic" :class="$style.img" :src="musicInfo.pic" role="button" :aria-label="coverToggleLabel" @click="togglePlayListLyric")
           div.description(:class="['scroll', $style.description]")
             p {{ $t('player__music_name') }}{{ musicInfo.name }}
             p {{ $t('player__music_singer') }}{{ musicInfo.singer }}
             p(v-if="musicInfo.album") {{ $t('player__music_album') }}{{ musicInfo.album }}
 
       transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
-        LyricPlayer(v-if="visibled")
+        LyricPlayer(v-if="visibled && !isShowPlayComment && !isShowPlayList")
+      transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
+        PlayListPage(v-if="visibled && isShowPlayList")
       music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
     transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
       play-bar(v-if="visibled")
@@ -27,20 +29,24 @@ transition(enter-active-class="animated slideInRight" leave-active-class="animat
 
 
 <script>
-import { ref, watch } from '@common/utils/vueTools'
+import { computed, ref, watch } from '@common/utils/vueTools'
+import { useI18n } from '@renderer/plugins/i18n'
 import { isFullscreen } from '@renderer/store'
 import {
   isShowPlayerDetail,
   isShowPlayComment,
+  isShowPlayList,
   musicInfo,
   playMusicInfo,
 } from '@renderer/store/player/state'
 import {
   setShowPlayerDetail,
   setShowPlayComment,
+  setShowPlayList,
   setShowPlayLrcSelectContentLrc,
 } from '@renderer/store/player/action'
 import LyricPlayer from './LyricPlayer.vue'
+import PlayListPage from './PlayListPage.vue'
 import PlayBar from './PlayBar.vue'
 import MusicComment from './components/MusicComment/index.vue'
 import ControlBtnsLeftHeader from './ControlBtnsLeftHeader.vue'
@@ -55,13 +61,22 @@ export default {
     ControlBtnsLeftHeader,
     ControlBtnsRightHeader,
     LyricPlayer,
+    PlayListPage,
     PlayBar,
     MusicComment,
   },
   setup() {
+    const t = useI18n()
     const visibled = ref(false)
 
     let clickTime = 0
+
+    const togglePlayListLyric = () => {
+      setShowPlayList(!isShowPlayList.value)
+    }
+    const coverToggleLabel = computed(() => (
+      isShowPlayList.value ? t('player__show_lyric') : t('player__play_list')
+    ))
 
     const hide = () => {
       setShowPlayerDetail(false)
@@ -88,6 +103,7 @@ export default {
     const handleAfterLeave = () => {
       setShowPlayLrcSelectContentLrc(false)
       hideComment(false)
+      setShowPlayList(false)
       visibled.value = false
 
       unregisterAutoHideMounse()
@@ -103,10 +119,13 @@ export default {
       playMusicInfo,
       isShowPlayerDetail,
       isShowPlayComment,
+      isShowPlayList,
       musicInfo,
       hide,
       handleContextMenu,
       hideComment,
+      togglePlayListLyric,
+      coverToggleLabel,
       handleAfterEnter,
       handleAfterLeave,
       visibled,
@@ -253,6 +272,12 @@ export default {
   box-shadow: 0 0 6px var(--color-primary-alpha-500);
   border-radius: 6px;
   opacity: .8;
+  cursor: pointer;
+  transition: opacity @transition-normal;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 .description {
   max-width: 300px;
