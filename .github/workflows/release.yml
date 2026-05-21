@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: '选择构建平台'
+        required: true
+        default: 'windows'
+        type: choice
+        options:
+          - windows
+          - win7
+          - mac
+          - linux
 
 env:
   IS_CI: 'true'
@@ -43,6 +55,7 @@ jobs:
   Windows:
     name: Windows
     runs-on: windows-latest
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.platform == 'windows')
     # needs: CheckCode
     steps:
       - name: Check out git repository
@@ -84,6 +97,7 @@ jobs:
   Windows_7:
     name: Windows_7
     runs-on: windows-latest
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.platform == 'win7')
     # needs: CheckCode
     steps:
       - name: Check out git repository
@@ -132,6 +146,7 @@ jobs:
   Mac:
     name: Mac
     runs-on: macos-latest
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.platform == 'mac')
     # needs: CheckCode
     steps:
       - name: Check out git repository
@@ -172,6 +187,7 @@ jobs:
   Linux:
     name: Linux
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.platform == 'linux')
     # needs: CheckCode
     steps:
       - name: Install package
