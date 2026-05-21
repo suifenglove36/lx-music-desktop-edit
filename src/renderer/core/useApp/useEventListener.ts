@@ -128,6 +128,7 @@ export default () => {
 
   window.app_event.on('keyDown', handle_key_down)
   window.key_event.on('key_mod+f12_down', handle_open_devtools)
+  window.key_event.on('key_mod+shift+f12_down', handle_open_devtools)
   window.key_event.on('key_f11_down', handle_fullscreen)
   window.key_event.on('key_mod+a_down', handle_selection)
   document.body.addEventListener('click', handleBodyClick, true)
@@ -139,6 +140,7 @@ export default () => {
 
     window.app_event.off('keyDown', handle_key_down)
     window.key_event.off('key_mod+f12_down', handle_open_devtools)
+    window.key_event.off('key_mod+shift+f12_down', handle_open_devtools)
     window.key_event.off('key_f11_down', handle_fullscreen)
     window.key_event.off('key_mod+a_down', handle_selection)
     document.body.removeEventListener('click', handleBodyClick)
