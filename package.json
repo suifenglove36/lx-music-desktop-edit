@@ -1,5 +1,5 @@
 {
-  "name": "lx-music-desktop-edit",
+  "name": "lx-music-desktop",
   "version": "2.12.3",
   "description": "一个免费的音乐查找助手",
   "main": "./dist/main.js",
@@ -99,6 +99,7 @@
   ],
   "author": {
     "name": "suifenglove36",
+    "repo": "lx-music-desktop-edit",
     "email": ""
   },
   "license": "Apache-2.0",

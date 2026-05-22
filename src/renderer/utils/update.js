@@ -4,10 +4,11 @@ import pkg from '../../../package.json'
 // TODO add Notice
 
 const author = pkg.author.name
-const name = pkg.name
+const name = pkg.author.repo
+// const name = pkg.name
 
 const address = [
-  [`https://ghfast.top/https://raw.githubusercontent.com/${author}/${name}/master/publish/version.json`, 'direct']
+  [`https://ghfast.top/https://raw.githubusercontent.com/${author}/${name}/master/publish/version.json`, 'direct'],
   [`https://raw.githubusercontent.com/${author}/${name}/master/publish/version.json`, 'direct'],
   // ['https://registry.npmjs.org/lx-music-desktop-version-info/latest', 'npm'],
   // [`https://cdn.jsdelivr.net/gh/${author}/${name}/publish/version.json`, 'direct'],
